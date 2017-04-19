@@ -1,7 +1,7 @@
 {
-  "name": "chronic absenteeism by all students",
+  "name": "chronic-absenteeism-by-all-students",
   "datapackage_version": "1.0-beta.18",
-  "title": "Chronic-Absenteeism-by-All-Students",
+  "title": "Chronic Absenteeism by All Students",
   "description": "Chronic Absenteeism reports the percentage of chronically absent students during a school year, per subgroup.",
   "version": "1.0",
   "licenses": [{
