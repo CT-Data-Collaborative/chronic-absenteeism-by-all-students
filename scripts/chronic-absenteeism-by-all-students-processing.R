@@ -5,48 +5,71 @@ library(datapkg)
 #
 # Processing Script for Chronic-Absenteeism-by-All-Students
 # Created by Jenna Daly
-# On 03/16/2017
+# On 03/31/2017
 #
 ##################################################################
 
 #Setup environment
 sub_folders <- list.files()
-data_location <- grep("raw$", sub_folders, value=T)
-path <- (paste0(getwd(), "/", data_location))
-all_csvs <- dir(path, recursive=T, pattern = ".csv") 
+data_location <- grep("All-Students", sub_folders, value=T)
+path_to_top_level <- (paste0(getwd(), "/", data_location))
+path_to_raw_data <- (paste0(getwd(), "/", data_location, "/", "raw"))
+all_csvs <- dir(path_to_raw_data, recursive=T, pattern = ".csv") 
+all_state_csvs <- dir(path_to_raw_data, recursive=T, pattern = "ct.csv") 
+all_dist_csvs <- all_csvs[!all_csvs %in% all_state_csvs]
 
-chronic_absent_AS <- data.frame(stringsAsFactors = F)
-chronic_absent_AS_noTrend <- grep("Trend", all_csvs, value=T, invert=T)
-###Chronic Absenteeism All-Students###
-for (i in 1:length(chronic_absent_AS_noTrend)) {
-  current_file <- read.csv(paste0(path, "/", chronic_absent_AS_noTrend[i]), stringsAsFactors=F, header=F )
+chronic_absent_dist <- data.frame(stringsAsFactors = F)
+chronic_absent_dist_noTrend <- grep("trend", all_dist_csvs, value=T, invert=T)
+for (i in 1:length(chronic_absent_dist_noTrend)) {
+  current_file <- read.csv(paste0(path_to_raw_data, "/", chronic_absent_dist_noTrend[i]), stringsAsFactors=F, header=F )
   current_file <- current_file[-c(1:2),]
   rownames(current_file) <- current_file[,1]
   colnames(current_file) <- current_file[which(rownames(current_file) %in% c("District", "DISTRICT")), ]
   rownames(current_file) <- NULL
   current_file = current_file[-1, ] 
   current_file <- current_file[, !(names(current_file) == "District Code")]
-  get_year <- as.numeric(substr(unique(unlist(gsub("[^0-9]", "", unlist(chronic_absent_AS_noTrend[i])), "")), 1, 4))
+  get_year <- as.numeric(substr(unique(unlist(gsub("[^0-9]", "", unlist(chronic_absent_dist_noTrend[i])), "")), 1, 4))
   get_year <- paste0(get_year, "-", get_year + 1) 
   current_file$Year <- get_year
-  chronic_absent_AS <- rbind(chronic_absent_AS, current_file)
+  chronic_absent_dist <- rbind(chronic_absent_dist, current_file)
 }
 
 #Add statewide data...
+chronic_absent_state <- data.frame(stringsAsFactors = F)
+chronic_absent_state_noTrend <- grep("trend", all_state_csvs, value=T, invert=T)
+for (i in 1:length(chronic_absent_state_noTrend)) {
+  current_file <- read.csv(paste0(path_to_raw_data, "/", chronic_absent_state_noTrend[i]), stringsAsFactors=F, header=F )
+  current_file <- current_file[-c(1:2),]
+  rownames(current_file) <- current_file[,1]
+  colnames(current_file) <- current_file[which(rownames(current_file) %in% c("Organization")), ]
+  rownames(current_file) <- NULL
+  current_file = current_file[-1, ] 
+  get_year <- as.numeric(substr(unique(unlist(gsub("[^0-9]", "", unlist(chronic_absent_state_noTrend[i])), "")), 1, 4))
+  get_year <- paste0(get_year, "-", get_year + 1) 
+  current_file$Year <- get_year
+  chronic_absent_state <- rbind(chronic_absent_state, current_file)
+}
+
+#Combine district and state
+#rename Organization column in state data
+names(chronic_absent_state)[names(chronic_absent_state)=="Organization"] <- "District"
+
+#set District column to CT
+chronic_absent_state$District <- "Connecticut"
+
+#bind together
+chronic_absent <- rbind(chronic_absent_state, chronic_absent_dist)
 
 #backfill Districts
 district_dp_URL <- 'https://raw.githubusercontent.com/CT-Data-Collaborative/ct-school-district-list/master/datapackage.json'
 district_dp <- datapkg_read(path = district_dp_URL)
 districts <- (district_dp$data[[1]])
 
-chronic_absent_AS_fips <- merge(chronic_absent_AS, districts, by.x = "District", by.y = "District", all=T)
+chronic_absent_fips <- merge(chronic_absent, districts, by.x = "District", by.y = "District", all=T)
 
-#Set FixedDistrict to Connecticut when District is "State Level"
-chronic_absent_AS_fips[["FixedDistrict"]][chronic_absent_AS_fips$"District" == "State Level"]<- "Connecticut"
+chronic_absent_fips$District <- NULL
 
-chronic_absent_AS_fips$District <- NULL
-
-chronic_absent_AS_fips<-chronic_absent_AS_fips[!duplicated(chronic_absent_AS_fips), ]
+chronic_absent_fips<-chronic_absent_fips[!duplicated(chronic_absent_fips), ]
 
 #backfill year
 years <- c("2011-2012",
@@ -65,62 +88,62 @@ backfill_years$Year <- as.character(backfill_years$Year)
 
 backfill_years <- arrange(backfill_years, FixedDistrict)
 
-complete_chronic_absent_AS <- merge(chronic_absent_AS_fips, backfill_years, all=T)
+complete_chronic_absent <- merge(chronic_absent_fips, backfill_years, all=T)
 
 #remove duplicated Year rows
-complete_chronic_absent_AS <- complete_chronic_absent_AS[!with(complete_chronic_absent_AS, is.na(complete_chronic_absent_AS$Year)),]
+complete_chronic_absent <- complete_chronic_absent[!with(complete_chronic_absent, is.na(complete_chronic_absent$Year)),]
 
 #recode missing data with -6666
-complete_chronic_absent_AS[["% Chronically Absent"]][is.na(complete_chronic_absent_AS[["% Chronically Absent"]])] <- -6666
+complete_chronic_absent[["% Chronically Absent"]][is.na(complete_chronic_absent[["% Chronically Absent"]])] <- -6666
 
 #recode suppressed data with -9999
-complete_chronic_absent_AS[["% Chronically Absent"]][complete_chronic_absent_AS$"% Chronically Absent" == "*"]<- -9999
+complete_chronic_absent[["% Chronically Absent"]][complete_chronic_absent$"% Chronically Absent" == "*"]<- -9999
 
 #return blank in FIPS if not reported
-complete_chronic_absent_AS$FIPS <- as.character(complete_chronic_absent_AS$FIPS)
-complete_chronic_absent_AS[["FIPS"]][is.na(complete_chronic_absent_AS[["FIPS"]])] <- ""
+complete_chronic_absent$FIPS <- as.character(complete_chronic_absent$FIPS)
+complete_chronic_absent[["FIPS"]][is.na(complete_chronic_absent[["FIPS"]])] <- ""
 
 #reshape from wide to long format
 cols_to_stack <- c("% Chronically Absent")
 
-long_row_count = nrow(complete_chronic_absent_AS) * length(cols_to_stack)
+long_row_count = nrow(complete_chronic_absent) * length(cols_to_stack)
 
-complete_chronic_absent_AS_long <- reshape(complete_chronic_absent_AS,
-                                   varying = cols_to_stack,
-                                   v.names = "Value",
-                                   timevar = "Variable",
-                                   times = cols_to_stack,
-                                   new.row.names = 1:long_row_count,
-                                   direction = "long"
+complete_chronic_absent_long <- reshape(complete_chronic_absent,
+                                           varying = cols_to_stack,
+                                           v.names = "Value",
+                                           timevar = "Variable",
+                                           times = cols_to_stack,
+                                           new.row.names = 1:long_row_count,
+                                           direction = "long"
 )
 
 #Rename FixedDistrict to District
-names(complete_chronic_absent_AS_long)[names(complete_chronic_absent_AS_long) == 'FixedDistrict'] <- 'District'
+names(complete_chronic_absent_long)[names(complete_chronic_absent_long) == 'FixedDistrict'] <- 'District'
 
 
 #reorder columns and remove ID column
-complete_chronic_absent_AS_long <- complete_chronic_absent_AS_long[order(complete_chronic_absent_AS_long$District, complete_chronic_absent_AS_long$Year),]
-complete_chronic_absent_AS_long$id <- NULL
+complete_chronic_absent_long <- complete_chronic_absent_long[order(complete_chronic_absent_long$District, complete_chronic_absent_long$Year),]
+complete_chronic_absent_long$id <- NULL
 
 #Add Measure Type
-complete_chronic_absent_AS_long$`Measure Type` <- "Percent"
+complete_chronic_absent_long$`Measure Type` <- "Percent"
 
 #Rename Variable columns
-complete_chronic_absent_AS_long$`Variable` <- "Chronically Absent Students"
+complete_chronic_absent_long$`Variable` <- "Chronically Absent Students"
 
 
 #Order columns
-complete_chronic_absent_AS_long <- complete_chronic_absent_AS_long %>% 
+complete_chronic_absent_long <- complete_chronic_absent_long %>% 
   select(`District`, `FIPS`, `Year`, `Variable`, `Measure Type`, `Value`)
 
 #Use this to find if there are any duplicate entires for a given district
-# test <- complete_chronic_absent_AS_long[,c("District", "Year")]
+# test <- complete_chronic_absent_long[,c("District", "Year")]
 # test2<-test[duplicated(test), ]
 
 #Write CSV
 write.table(
-  complete_chronic_absent_AS_long,
-  file.path(getwd(), "data", "chronic_absenteeism_all_students_2012-2016.csv"),
+  complete_chronic_absent_long,
+  file.path(path_to_top_level, "data", "chronic_absenteeism_all_students_2012-2016.csv"),
   sep = ",",
   row.names = F
 )

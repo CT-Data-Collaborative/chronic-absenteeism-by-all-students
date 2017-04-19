@@ -1,4 +1,6 @@
 *.pyc
 .cache/
 venv/
-.Rproj.user
+env/
+.DS_Store
+.idea/
