@@ -11,7 +11,7 @@ library(datapkg)
 
 #Setup environment
 sub_folders <- list.files()
-data_location <- grep("raw", sub_folders, value=T)
+data_location <- grep("raw$", sub_folders, value=T)
 path <- (paste0(getwd(), "/", data_location))
 all_csvs <- dir(path, recursive=T, pattern = ".csv") 
 
@@ -40,6 +40,9 @@ district_dp <- datapkg_read(path = district_dp_URL)
 districts <- (district_dp$data[[1]])
 
 chronic_absent_AS_fips <- merge(chronic_absent_AS, districts, by.x = "District", by.y = "District", all=T)
+
+#Set FixedDistrict to Connecticut when District is "State Level"
+chronic_absent_AS_fips[["FixedDistrict"]][chronic_absent_AS_fips$"District" == "State Level"]<- "Connecticut"
 
 chronic_absent_AS_fips$District <- NULL
 
