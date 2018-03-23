@@ -21,7 +21,7 @@
   }],
   "contributor": [],
   "resources": [{
-    "path": "data/chronic_absenteeism_all_students_2012-2016.csv",
+    "path": "data/chronic_absenteeism_all_students_2012-2017.csv",
     "format": "csv",
     "schema": {
       "fields": [{
@@ -62,7 +62,7 @@
       }
     }
   ],
-  "last_modified": "03/16/2017",
+  "last_modified": "03/23/2018",
   "ckan_extras": {
     "full_description": {
       "ckan_name": "Full Description",
@@ -71,7 +71,7 @@
     },
     "suppression": {
       "ckan_name": "Suppression",
-      "value": "Disaggregations resulting in counts of less than 20 students are suppressed",
+      "value": "Disaggregations where either the numerator is less than 6 or the denominator is less than 20 are suppressed.",
       "type": "string"
     },
     "technical_notes": {
@@ -112,12 +112,12 @@
     },
     "years_in_catalog": {
       "ckan_name": "Years in Catalog",
-      "value": ["2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016"],
+      "value": ["2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017"],
       "type": "array"
     },
     "latest_year": {
       "ckan_name": "Latest Year Available",
-      "value": "2015-2016",
+      "value": "2016-2017",
       "type": "string"
     },
     "disabled_views": {
@@ -143,7 +143,7 @@
 			"value": {
 				"Measure Type": "Percent",
 		 		"District": "Connecticut",
-		 		"Year": ["2015-2016"],
+		 		"Year": ["2016-2017"],
 		 		"Variable": "Chronically Absent Students"
 			},
 		  	"type": "object"
@@ -219,7 +219,21 @@
         "number type": "float",
         "value": 9.8
       } 
-    }        
+    }, 
+    {
+      "type": "$lookup",
+      "filter": {
+        "District": "Canaan School District",
+        "Year": "2016-2017",
+        "Variable": "Chronically Absent Students",
+        "Measure Type": "Percent" 
+      },
+      "expected": {
+        "type": "$match",
+        "number type": "float",
+        "value": 9.5
+      } 
+    }         
   ],
   "dimension_groups": [
     {

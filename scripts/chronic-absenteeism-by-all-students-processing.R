@@ -76,7 +76,8 @@ years <- c("2011-2012",
            "2012-2013",
            "2013-2014",
            "2014-2015",
-           "2015-2016")
+           "2015-2016", 
+           "2016-2017")
 
 backfill_years <- expand.grid(
   `FixedDistrict` = unique(districts$`FixedDistrict`),
@@ -137,13 +138,13 @@ complete_chronic_absent_long <- complete_chronic_absent_long %>%
   select(`District`, `FIPS`, `Year`, `Variable`, `Measure Type`, `Value`)
 
 #Use this to find if there are any duplicate entires for a given district
-# test <- complete_chronic_absent_long[,c("District", "Year")]
-# test2<-test[duplicated(test), ]
+test <- complete_chronic_absent_long[,c("District", "Year")]
+test2<-test[duplicated(test), ]
 
 #Write CSV
 write.table(
   complete_chronic_absent_long,
-  file.path(path_to_top_level, "data", "chronic_absenteeism_all_students_2012-2016.csv"),
+  file.path(path_to_top_level, "data", "chronic_absenteeism_all_students_2012-2017.csv"),
   sep = ",",
   row.names = F
 )
