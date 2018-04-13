@@ -2,7 +2,7 @@
   "name": "chronic-absenteeism-by-all-students",
   "datapackage_version": "1.0-beta.18",
   "title": "Chronic Absenteeism by All Students",
-  "description": "Chronic Absenteeism reports the percentage of chronically absent students during a school year, per subgroup.",
+  "description": "Chronic Absenteeism reports the percentage of chronically absent students during a school year, for all students.",
   "version": "1.0",
   "licenses": [{
     "url": "http://opendatacommons.org/licenses/pddl/",
@@ -62,7 +62,7 @@
       }
     }
   ],
-  "last_modified": "03/23/2018",
+  "last_modified": "04/13/2018",
   "ckan_extras": {
     "full_description": {
       "ckan_name": "Full Description",
